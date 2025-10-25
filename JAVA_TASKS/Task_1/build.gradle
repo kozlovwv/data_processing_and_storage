@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 group = 'ru.nsu.kozlov'
@@ -10,11 +11,44 @@ repositories {
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.78'
 }
 
-test {
-    useJUnitPlatform()
+// Функция для создания исполняемого JAR
+def createExecutableJar(String jarName, String mainClass) {
+    return tasks.register("${jarName}Jar", Jar) {
+        archiveBaseName = jarName
+        manifest {
+            attributes 'Main-Class': mainClass
+        }
+
+        from sourceSets.main.output
+        dependsOn configurations.runtimeClasspath
+
+        from {
+            configurations.runtimeClasspath.collect {
+                if (it.isDirectory()) {
+                    it
+                } else {
+                    // Исключаем файлы подписей для всех зависимостей
+                    zipTree(it).matching {
+                        exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+                    }
+                }
+            }
+        }
+
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+}
+
+// Создаем JAR файлы
+def clientJar = createExecutableJar('client', 'ru.nsu.kozlov.Client')
+def serverJar = createExecutableJar('server', 'ru.nsu.kozlov.Server')
+def caJar = createExecutableJar('create-ca-key', 'ru.nsu.kozlov.CreateCAKey')
+
+// Задача для сборки всех JAR
+tasks.register('allJars') {
+    dependsOn clientJar, serverJar, caJar
 }
