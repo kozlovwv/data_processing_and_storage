@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+}
+
+group = 'ru.nsu.kozlov'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    runtimeOnly 'com.sun.xml.bind:jaxb-impl:2.3.9'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('runApp', JavaExec) {
+    group = 'application'
+    description = 'Запуск приложения с аргументами командной строки'
+
+    // Укажите ваш класс с методом main (например, 'ru.nsu.kozlov.Main')
+    mainClass = 'ru.nsu.kozlov.Main'
+
+    classpath = sourceSets.main.runtimeClasspath
+
+    // Используем метод args() вместо присвоения через "="
+    if (project.hasProperty('appArgs')) {
+        args(project.property('appArgs').split(','))
+    }
+}
