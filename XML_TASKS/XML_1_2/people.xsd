@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified">
+
+    <xs:element name="people">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="person" type="PersonType"
+                            minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="count" type="xs:nonNegativeInteger" use="required"/>
+        </xs:complexType>
+
+        <xs:key name="personIdKey">
+            <xs:selector xpath="person"/>
+            <xs:field    xpath="@id"/>
+        </xs:key>
+
+        <xs:keyref name="spouseRefCheck" refer="personIdKey">
+            <xs:selector xpath="person/spouse"/>
+            <xs:field    xpath="@ref"/>
+        </xs:keyref>
+
+        <xs:keyref name="parentRefCheck" refer="personIdKey">
+            <xs:selector xpath="person/parents/parent"/>
+            <xs:field    xpath="@ref"/>
+        </xs:keyref>
+        <xs:keyref name="sonRefCheck" refer="personIdKey">
+            <xs:selector xpath="person/children/son"/>
+            <xs:field    xpath="@ref"/>
+        </xs:keyref>
+        <xs:keyref name="daughterRefCheck" refer="personIdKey">
+            <xs:selector xpath="person/children/daughter"/>
+            <xs:field    xpath="@ref"/>
+        </xs:keyref>
+        <xs:keyref name="siblingRefCheck" refer="personIdKey">
+            <xs:selector xpath="person/siblings/sibling"/>
+            <xs:field    xpath="@ref"/>
+        </xs:keyref>
+    </xs:element>
+
+    <xs:complexType name="PersonType">
+        <xs:all>
+            <xs:element name="name"     type="NameType"     minOccurs="0"/>
+            <xs:element name="gender"   type="GenderType"   minOccurs="0"/>
+            <xs:element name="spouse"   type="SpouseType"   minOccurs="0"/>
+            <xs:element name="parents"  type="ParentsType"  minOccurs="0"/>
+            <xs:element name="children" type="ChildrenType" minOccurs="0"/>
+            <xs:element name="siblings" type="SiblingsType" minOccurs="0"/>
+            <xs:element name="warnings" type="WarningsType" minOccurs="0"/>
+        </xs:all>
+        <xs:attribute name="id" type="xs:ID" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="NameType">
+        <xs:all>
+            <xs:element name="first" type="NonEmptyString" minOccurs="0"/>
+            <xs:element name="last"  type="NonEmptyString" minOccurs="0"/>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:simpleType name="GenderType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="male"/>
+            <xs:enumeration value="female"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="SpouseType">
+        <xs:attribute name="ref"  type="xs:IDREF"      use="optional"/>
+        <xs:attribute name="name" type="NonEmptyString" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ParentsType">
+        <xs:sequence>
+            <xs:element name="parent" type="RefType"        minOccurs="0" maxOccurs="2"/>
+            <xs:element name="father" type="NonEmptyString" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="mother" type="NonEmptyString" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ChildrenType">
+        <xs:sequence>
+            <xs:element name="son"      type="RefType"        minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="daughter" type="RefType"        minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="child"    type="NonEmptyString" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="declared" type="xs:nonNegativeInteger" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="SiblingsType">
+        <xs:sequence>
+            <xs:element name="sibling" type="RefType"        minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="brother" type="NonEmptyString" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="sister"  type="NonEmptyString" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="declared" type="xs:nonNegativeInteger" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="WarningsType">
+        <xs:sequence>
+            <xs:element name="warning" type="xs:string"
+                        minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="RefType">
+        <xs:attribute name="ref" type="xs:IDREF" use="required"/>
+    </xs:complexType>
+
+    <xs:simpleType name="NonEmptyString">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>
