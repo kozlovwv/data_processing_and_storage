@@ -1,0 +1,47 @@
+@startuml
+skinparam linetype ortho
+hide circle
+
+entity "People (Люди)" as people {
+  * id : VARCHAR <<PK>>  {строка от 1 символа}
+  --
+  first_name : VARCHAR {непустая строка}
+  last_name : VARCHAR {непустая строка}
+  gender : VARCHAR {make / female}
+}
+
+entity "Marriages (Браки)" as marriages {
+  * id : INT <<PK>> <<AutoIncrement>>
+  --
+  person_id_1 : VARCHAR <<FK>> {Уникально: Участник 1}
+  person_id_2 : VARCHAR <<FK>> {Уникально: Участник 2}
+}
+' Комментарий по ограничениям: 
+' На полях person_id_1 и person_id_2 должен стоять UNIQUE constraint, 
+' чтобы у человека не могло быть двух активных браков одновременно (1:1).
+
+' Связи для браков: человек может не состоять в браке (0), но максимум в одном (1)
+people |o--o| marriages
+people |o--o| marriages
+
+
+entity "Parents_Children (Родители и Дети)" as parents_children {
+  * parent_id : VARCHAR <<PK>> <<FK>>
+  * child_id : VARCHAR <<PK>> <<FK>>
+  --
+  child_type : VARCHAR {son / daughter / unknown}
+}
+people ||--o{ parents_children : "является родителем для"
+people ||--o{ parents_children : "является ребенком для"
+
+
+entity "Siblings (Братья и Сестры)" as siblings {
+  * person_id : VARCHAR <<PK>> <<FK>>
+  * sibling_id : VARCHAR <<PK>> <<FK>>
+  --
+  sibling_type : VARCHAR {brother / sister / unknown}
+}
+people ||--o{ siblings : "является сиблингом для"
+people ||--o{ siblings : "имеет сиблинга"
+
+@endum
