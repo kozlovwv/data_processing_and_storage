@@ -1,0 +1,394 @@
+openapi: 3.0.3
+info:
+  title: Airport Booking & Check-In API
+  description: API для поиска авиарейсов, бронирования билетов и онлайн-регистрации на базе демонстрационной схемы авиакомпании.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Локальный сервер разработки
+
+paths:
+  /cities:
+    get:
+      summary: Получить список городов
+      operationId: getCities
+      responses:
+        '200':
+          description: Успешный возврат списка названий городов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: "Novosibirsk"
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /airports:
+    get:
+      summary: Получить список аэропортов
+      operationId: getAirports
+      parameters:
+        - name: city
+          in: query
+          description: Название города для фильтрации (необязательно)
+          required: false
+          schema:
+            type: string
+            example: "Novosibirsk"
+      responses:
+        '200':
+          description: Успешный возврат списка аэропортов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AirportResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /inbound:
+    get:
+      summary: Получить расписание прибывающих рейсов
+      operationId: getInboundSchedule
+      parameters:
+        - name: airport
+          in: query
+          description: Код аэропорта (ИАТА)
+          required: false
+          schema:
+            type: string
+            example: "OVB"
+      responses:
+        '200':
+          description: Расписание прибывающих рейсов получено
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InboundScheduleResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /outbound:
+    get:
+      summary: Получить расписание вылетающих рейсов
+      operationId: getOutboundSchedule
+      parameters:
+        - name: airport
+          in: query
+          description: Код аэропорта (ИАТА)
+          required: false
+          schema:
+            type: string
+            example: "OVB"
+      responses:
+        '200':
+          description: Расписание вылетающих рейсов получено
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutboundScheduleResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /routes:
+    get:
+      summary: Поиск маршрутов перелётов
+      operationId: getSearchRoutes
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "OVB"
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "DME"
+        - name: departure_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2026-06-15"
+        - name: booking_class
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "Economy"
+        - name: max_connections
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "2"
+      responses:
+        '200':
+          description: Результаты поиска оптимальных маршрутов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RouteSearchResponse'
+        '400':
+          description: Невалидные параметры запроса (класс, дата или пересадки)
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "missing departure date"
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /bookings:
+    post:
+      summary: Оформить бронирование и купить билет
+      operationId: createBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '201':
+          description: Бронирование успешно создано, билет выписан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '400':
+          description: Ошибка валидации тела запроса (например, пустой массив flight_ids)
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "flight_ids array cannot be empty"
+        '500':
+          description: Внутренняя ошибка сервера (нет мест или сбой БД)
+
+  /check-in:
+    post:
+      summary: Онлайн-регистрация на конкретный рейс
+      operationId: checkIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '201':
+          description: Пассажир успешно зарегистрирован, талон выдан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInResponse'
+        '400':
+          description: Место уже занято или класс места не совпадает с билетом
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "selected seat is already occupied on this flight"
+        '404':
+          description: Билет или сегмент перелёта не найден в системе
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "ticket or flight segment not found"
+        '500':
+          description: Внутренняя ошибка сервера
+
+components:
+  schemas:
+    AirportResponse:
+      type: object
+      properties:
+        airport_code:
+          type: string
+          example: "OVB"
+        airport_name:
+          type: string
+          example: "Tolmachevo Airport"
+        city:
+          type: string
+          example: "Novosibirsk"
+        country:
+          type: string
+          example: "Russia"
+
+    InboundScheduleResponse:
+      type: object
+      properties:
+        days_of_week:
+          type: array
+          items:
+            type: integer
+          example: [1, 3, 5]
+        time_of_arrival:
+          type: string
+          example: "14:20:00"
+        flight_no:
+          type: string
+          example: "PG0224"
+        origin:
+          type: string
+          example: "DME"
+
+    OutboundScheduleResponse:
+      type: object
+      properties:
+        days_of_week:
+          type: array
+          items:
+            type: integer
+          example: [2, 4, 6]
+        time_of_departure:
+          type: string
+          example: "08:30:00"
+        flight_no:
+          type: string
+          example: "PG0223"
+        destination:
+          type: string
+          example: "DME"
+
+    FlightSegmentDTO:
+      type: object
+      properties:
+        flight_no:
+          type: string
+          example: "PG0103"
+        departure_airport:
+          type: string
+          example: "OVB"
+        departure_city:
+          type: string
+          example: "Novosibirsk"
+        arrival_airport:
+          type: string
+          example: "DME"
+        arrival_city:
+          type: string
+          example: "Moscow"
+        departure_time:
+          type: string
+          format: date-time
+          example: "2026-06-15T08:30:00Z"
+        arrival_time:
+          type: string
+          format: date-time
+          example: "2026-06-15T12:45:00Z"
+        aircraft_code:
+          type: string
+          example: "733"
+        price:
+          type: number
+          format: float
+          example: 12500.50
+
+    RouteSearchResponse:
+      type: object
+      properties:
+        total_price:
+          type: number
+          format: float
+          example: 24250.00
+        connections:
+          type: integer
+          example: 1
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlightSegmentDTO'
+
+    BookingRequest:
+      type: object
+      required:
+        - passenger_id
+        - passenger_name
+        - booking_class
+        - flight_ids
+      properties:
+        passenger_id:
+          type: string
+          example: "1234567890"
+        passenger_name:
+          type: string
+          example: "KIRILL IVANOV"
+        booking_class:
+          type: string
+          example: "Economy"
+        flight_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [1, 37003]
+
+    BookingResponse:
+      type: object
+      properties:
+        book_ref:
+          type: string
+          example: "5IM20Y"
+        ticket_no:
+          type: string
+          example: "0002184839402"
+        total_price:
+          type: number
+          format: float
+          example: 24250.00
+
+    CheckInRequest:
+      type: object
+      required:
+        - ticket_no
+        - flight_id
+        - seat_no
+      properties:
+        ticket_no:
+          type: string
+          example: "0002184839402"
+        flight_id:
+          type: integer
+          format: int64
+          example: 1
+        seat_no:
+          type: string
+          example: "10D"
+
+    CheckInResponse:
+      type: object
+      properties:
+        ticket_no:
+          type: string
+          example: "0002184839402"
+        flight_id:
+          type: integer
+          format: int64
+          example: 1
+        seat_no:
+          type: string
+          example: "10D"
+        boarding_no:
+          type: integer
+          example: 42
+        boarding_time:
+          type: string
+          format: date-time
+          example: "2026-06-08T19:35:00Z"
